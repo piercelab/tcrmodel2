@@ -1,0 +1,127 @@
+Only in tcrmodel2/alphafold/data: custom_templates.py
+diff -r alphafold/alphafold/data/feature_processing.py tcrmodel2/alphafold/data/feature_processing.py
+63d62
+< 
+diff -r alphafold/alphafold/data/parsers.py tcrmodel2/alphafold/data/parsers.py
+93a94,98
+>   # Use gap to break a single chain
+>   for index,sequence in enumerate(sequences):
+>     if ":" in sequence:
+>       sequences[index]=sequence.upper().split(":")
+>       
+298a304,322
+> def truncate_stockholm_msa2(stockholm_msa: str, max_sequences: int) -> str:
+>   """Reads + truncates a Stockholm alignment - BP 12/15/22."""
+>   seqnames = set()
+>   filtered_lines = []
+>   
+>   for line in stockholm_msa.splitlines():    
+>     if line.strip() and not line.startswith(('#', '//')):
+>       # Ignore blank lines, markup and end symbols - remainder are alignment
+>       # sequence parts.
+>       seqname = line.partition(' ')[0]
+>       seqnames.add(seqname)
+>       if len(seqnames) >= max_sequences:
+>         break
+> 
+>   for line in stockholm_msa.splitlines():
+>     if _keep_line(line, seqnames):
+>       filtered_lines.append(line)
+> 
+>   return '\n'.join(filtered_lines) + '\n'
+Only in tcrmodel2/alphafold/data: pipeline_custom_templates.py
+Only in tcrmodel2/alphafold/data: pipeline_multimer_custom_templates.py
+diff -r alphafold/alphafold/data/pipeline_multimer.py tcrmodel2/alphafold/data/pipeline_multimer.py
+203c203,206
+<       is_homomer_or_monomer: bool) -> pipeline.FeatureDict:
+---
+>       is_homomer_or_monomer: bool,
+>       save_msa_fasta: bool,
+>       save_template_names: bool,
+>       msa_for_template_query_seq_only: bool) -> pipeline.FeatureDict:
+214c217,220
+<           msa_output_dir=chain_msa_output_dir)
+---
+>           msa_output_dir=chain_msa_output_dir,
+>           save_msa_fasta=save_msa_fasta,
+>           save_template_names=save_template_names,
+>           msa_for_template_query_seq_only=msa_for_template_query_seq_only)
+242c248,251
+<               msa_output_dir: str) -> pipeline.FeatureDict:
+---
+>               msa_output_dir: str,
+>               save_msa_fasta: bool,
+>               save_template_names: bool,
+>               msa_for_template_query_seq_only: bool) -> pipeline.FeatureDict:
+269c278,281
+<           is_homomer_or_monomer=is_homomer_or_monomer)
+---
+>           is_homomer_or_monomer=is_homomer_or_monomer,
+>           save_msa_fasta=save_msa_fasta,
+>           save_template_names=save_template_names,
+>           msa_for_template_query_seq_only=msa_for_template_query_seq_only)
+diff -r alphafold/alphafold/data/pipeline.py tcrmodel2/alphafold/data/pipeline.py
+150c150,154
+<   def process(self, input_fasta_path: str, msa_output_dir: str) -> FeatureDict:
+---
+>   def process(self, input_fasta_path: str, 
+>               msa_output_dir: str, 
+>               save_msa_fasta: bool, 
+>               save_template_names: bool,
+>               msa_for_template_query_seq_only: bool) -> FeatureDict:
+182a187,189
+>     if msa_for_template_query_seq_only:
+>       '''BP 12/15/22 let's just keep the target (query) sequence'''
+>       msa_for_templates = parsers.truncate_stockholm_msa2(msa_for_templates, 1)
+233a241,253
+>     if save_msa_fasta:
+>       msa_outpath=os.path.join(msa_output_dir, 'msa_feat_gaptoU.fasta')
+>       with open(msa_outpath, 'w+') as fh:
+>         fh.write(">query"+"\n"+input_sequence+"\n")
+>         counter=1
+>         for seq in msa_features['msa']:
+>             seq=[residue_constants.ID_TO_HHBLITS_AA[num] for num in seq]
+>             # for x in range(len(seq)):
+>             counter+=1
+>             fh.write(">seq_"+str(counter)+"\n")
+>             out="".join(seq).replace("-","U")
+>             fh.write(out+"\n")
+>             
+242a263,270
+>     if save_template_names:
+>       temp_name_fn=os.path.join(msa_output_dir, 'template_names.txt')
+>       # with open(temp_name_fn, 'w+') as fh:
+>       #     fh.write("\n".join((map(str,templates_result.features['template_domain_names']))))
+>       template_names=[name.decode('utf-8') for name in templates_result.features['template_domain_names']]
+>       with open(temp_name_fn, 'w+') as fh:
+>           fh.write("\n".join(template_names))
+>           
+diff -r alphafold/alphafold/model/model.py tcrmodel2/alphafold/model/model.py
+33c33,34
+<     multimer_mode: bool) -> Mapping[str, Any]:
+---
+>     multimer_mode: bool,
+>     interfaces: list) -> Mapping[str, Any]:
+45a47,60
+>     
+>     if len(interfaces)!=0:
+>       iptm=[]
+>       for interface in interfaces:
+>         new_asym_id=prediction_result['predicted_aligned_error']['asym_id']
+>         for old_index, new_index in enumerate(interface):
+>           new_asym_id=np.where(new_asym_id==old_index+1, new_index, new_asym_id)
+>         iptm.append(confidence.predicted_tm_score(
+>               logits=prediction_result['predicted_aligned_error']['logits'],
+>               breaks=prediction_result['predicted_aligned_error']['breaks'],
+>               asym_id=new_asym_id,
+>               interface=True))
+>       confidence_metrics['custom_iptm'] = iptm
+> 
+152c167
+<               ) -> Mapping[str, Any]:
+---
+>               interfaces: list) -> Mapping[str, Any]:
+174c189
+<         get_confidence_metrics(result, multimer_mode=self.multimer_mode))
+---
+>         get_confidence_metrics(result, multimer_mode=self.multimer_mode, interfaces=interfaces))
