@@ -1,13 +1,14 @@
 # Load required packages
 import os
 import sys
-import pandas as pd
+# import pandas as pd
 import json
 from absl import flags
 from absl import app
 from glob import glob
 import subprocess
-from scripts import pmhc_templates, seq_utils, tcr_utils, pdb_utils
+
+from scripts import pmhc_templates, seq_utils, tcr_utils, pdb_utils, parse_tcr_seq
 
 # input
 flags.DEFINE_string('output_dir', "experiments/", 
@@ -85,7 +86,7 @@ def main(_argv):
     if mhc_cls==1:
         pmhc_templates.gen_align_file_cls1(pep_seq, mhca_seq, out_dir, ignore_pdbs, max_template_date)
     else:
-        pmhc_templates.gen_align_file_cls2(pep_seq, mhca_seq, mhcb_seq, out_dir, ignore_pdbs, max_template_date)
+        pmhc_templates.gen_align_file_corep1_cls2(pep_seq, mhca_seq, mhcb_seq, out_dir, ignore_pdbs, max_template_date)
 
     # create status file and update it
     status_file=os.path.join(out_dir,"modeling_status.txt")
@@ -221,13 +222,14 @@ def main(_argv):
     subprocess.run("rm -rf %s/%s*; " % (out_dir, job_id), shell=True)
     subprocess.run("rm %s/pmhc_alignment.tsv; " % (out_dir), shell=True)
     
+        
     ####################
     # Renumber output  #
     ####################
     
     models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
     for model in models_list:
-        tcr_utils.renumber_pdb(model, '%s/%s' % (out_dir, os.path.basename(model)), mhc_cls)
+        tcr_utils.renumber_pdb(model, '%s/%s' % (out_dir, os.path.basename(model)), mhc_cls)   
 
     # align all to ranked_0's pMHC
     try:
@@ -240,6 +242,90 @@ def main(_argv):
             subprocess.run("mv %s %s" % (pdb_aln, pdb), shell=True)
     except:
         print("unable to align pdbs")
+
+    # compute angle 
+
+    def get_docking_angles(tcr_docking_angle_exec, target_pdb, mhc_type):
+        result = subprocess.run([f'{tcr_docking_angle_exec} {target_pdb} {mhc_type}'], shell=True, capture_output=True, text=True)
+        parse_result = result.stdout.split("\n")
+        get_angles = [i for i in parse_result if i.startswith('ANGLES')][0].split("\t")
+        docking_angle = float(get_angles[1])
+        inc_angle = float(get_angles[2])
+        return docking_angle, inc_angle
+
+    dock_dict = {}
+    inc_dict = {} 
+    tcr_docking_angle_exec = '/piercehome/programs/tcr_docking_angle/tcr_docking_angle'     
+    models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
+    for model in models_list:
+        if mhc_cls==1:
+            dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=0)
+        else:
+            dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=1)
+        dock_dict.update({os.path.basename(model):dock_ang})
+        inc_dict.update({os.path.basename(model):inc_ang})        
+    out_json['angles'] = {'docking_angle':dock_dict,'incident_angle':inc_dict}
+    
+
+    #get CDR3s confidence scores 
+    def get_cdr3_conf(pdb_path):
+       import MDAnalysis as mda
+       pdb_u = mda.Universe(pdb_path)
+       cdr3a_bfactors_avg = pdb_u.select_atoms('chainID D and resid 106:139').atoms.bfactors.mean()
+       cdr3b_bfactors_avg = pdb_u.select_atoms('chainID E and resid 106:139').atoms.bfactors.mean()
+       return cdr3a_bfactors_avg, cdr3b_bfactors_avg
+
+    models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
+    for model in models_list:
+       cdr3a_bfactors_avg, cdr3b_bfactors_avg = get_cdr3_conf(model)
+       out_json[os.path.basename(model).split('.pdb')[0]]['cdr3a_plddt'] = cdr3a_bfactors_avg
+       out_json[os.path.basename(model).split('.pdb')[0]]['cdr3b_plddt'] = cdr3b_bfactors_avg
+
+    
+    #write statistics
+    json_output_path = os.path.join(out_dir, 'statistics.json')
+    with open(json_output_path, 'w') as f:
+        f.write(json.dumps(out_json, indent=4))
+
+    #parse tcr template sequences 
+    tcra=out_json["tcra_tmplts"]
+    tcra_seqs={}
+    for pdb_chain in tcra:
+        in_seq=parse_tcr_seq.get_seq(pdb_chain)
+        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
+        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
+        tcra_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
+
+    tcrb=out_json['tcrb_tmplts']
+    tcrb_seqs={}
+    for pdb_chain in tcrb:
+        in_seq=parse_tcr_seq.get_seq(pdb_chain)
+        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
+        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
+        tcrb_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
+
+    tcr_out_json={}
+    tcr_out_json["tcra_seqs"]=tcra_seqs
+    tcr_out_json["tcrb_seqs"]=tcrb_seqs
+
+    anarci_out=parse_tcr_seq.anarci_custom(tcra_seq)
+    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+    v_gene, j_gene=parse_tcr_seq.get_germlines(tcra_seq)
+    tcr_out_json["tcra_user"]=[cdr3, seq, v_gene, j_gene]
+
+    anarci_out=parse_tcr_seq.anarci_custom(tcrb_seq)
+    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+    v_gene, j_gene=parse_tcr_seq.get_germlines(tcrb_seq)
+    tcr_out_json["tcrb_user"]=[cdr3, seq, v_gene, j_gene]
+
+    tcr_json_output_path = os.path.join(out_dir, 'tcr_seqs.json')
+    with open(tcr_json_output_path, 'w') as f:
+        f.write(json.dumps(tcr_out_json, indent=4))
+
+
+
 if __name__ == '__main__':
     try:
         app.run(main)

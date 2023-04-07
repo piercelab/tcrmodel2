@@ -121,6 +121,46 @@ def get_best_hit_cls2(pep, mhc1, mhc2, df2,ignore_pdbs, cutoff):
     tmplt_dict=list(tmplt_dict.items())[:4]
     return tmplt_dict
 
+def get_best_hit_corep1_cls2(pep, mhc1, mhc2, df2,ignore_pdbs, cutoff):
+    # get top ranking templates, ranked by MHC then peptide similarity
+    # similarity is measured in BLOSUM62 alignment score 
+    # for class II MHCs, the MHC similarity is a sum of MHCa and MHCb similarity 
+    df2['release_dates'] =  pd.to_datetime(df2['release_dates'], format='%Y-%m-%d') 
+
+    tmplt_dict={} # keep track of alignment scores
+    for idx, row in df2.iterrows():
+        if row.release_dates > cutoff:
+            # ignore pdbs released after a certain date
+            continue
+        if row.PDB.lower() in ignore_pdbs:
+            # ignore pdbs blacklisted by user
+            continue
+        # obtain MHC alignment score
+        mhc1_tmp, mhc2_tmp=row.MHC.split(" ")
+
+        alignments = aligner.align(mhc1, mhc1_tmp)
+        alignment = alignments[0]
+        mhc1_score=alignment.score
+        alignments = aligner.align(mhc2, mhc2_tmp)
+        alignment = alignments[0]
+        mhc2_score=alignment.score
+
+        # obtain peptide alignment score
+        pep_tmp=row.peptide_core_p1
+        alignments = aligner.align(pep_tmp, pep)
+        alignment = alignments[0]
+        pep_score=alignment.score
+
+        # update template dictionary with scores
+        tmplt_dict[row.PDB]=(mhc1_score+mhc2_score,pep_score)
+
+    # rank templates first by MHC then by peptide similarity 
+    tmplt_dict=dict(sorted(tmplt_dict.items(), key=lambda item: item[1],reverse=True))
+
+    # return top 4 templates 
+    tmplt_dict=list(tmplt_dict.items())[:4]
+    return tmplt_dict
+
 def gen_align_for_given_tmplt_cls1(tmplt_pdb, pep_len, mhc_seq):
     # generate alignment between query and template for a given template
 
@@ -200,6 +240,30 @@ def gen_align_file_cls2(
     tmplt_out=""
     for (tmplt_name,score) in tmplt_dict:
         tmplt_pdb="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/pdb/%s.pmhc.pdb" % tmplt_name
+        tmplt_out+=gen_align_for_given_tmplt_cls2(tmplt_pdb, len(pep_seq), mhc1_seq, mhc2_seq)
+
+    tmplt_aln_file=os.path.join(out_dir, "pmhc_alignment.tsv")
+    with open("%s" % tmplt_aln_file,'w+') as fh:
+        fh.write("%s%s" % (tmplt_header, tmplt_out)) 
+
+def gen_align_file_corep1_cls2(
+        pep_seq, 
+        mhc1_seq, 
+        mhc2_seq, 
+        out_dir, 
+        ignore_pdbs,
+        cutoff="2100-01-01"):
+    # generate full alignment file for a given query in class II
+
+    # read all nr class II complexes as dataframe
+    fn="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/nr_cls_II_complexes.txt"
+    df2=pd.read_csv(fn,sep="\t")
+    cutoff = datetime.strptime(cutoff, '%Y-%m-%d')
+
+    tmplt_dict=get_best_hit_corep1_cls2(pep_seq, mhc1_seq, mhc2_seq, df2, ignore_pdbs, cutoff)
+    tmplt_out=""
+    for (tmplt_name,score) in tmplt_dict:
+        tmplt_pdb="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/pdb/cp1/%s.pmhc.pdb" % tmplt_name
         tmplt_out+=gen_align_for_given_tmplt_cls2(tmplt_pdb, len(pep_seq), mhc1_seq, mhc2_seq)
 
     tmplt_aln_file=os.path.join(out_dir, "pmhc_alignment.tsv")

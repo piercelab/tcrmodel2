@@ -7,7 +7,7 @@ from absl import flags
 from absl import app
 from glob import glob
 import subprocess 
-from scripts import seq_utils,pdb_utils,tcr_utils
+from scripts import seq_utils,pdb_utils,tcr_utils,parse_tcr_seq
 
 # input
 flags.DEFINE_string('output_dir', "experiments/", 'Path to output directory.')
@@ -106,7 +106,7 @@ def main(_argv):
     out_json={}
     
     #get scores
-    items=['ranking_confidence','plddt','ptm','iptm']
+    items=['model_confidence','plddt','ptm','iptm']
 
     with open("%s/%s/model_scores.txt" % (out_dir, job_id)) as fh:
         for idx, line in enumerate(fh):
@@ -134,13 +134,11 @@ def main(_argv):
     out_json["tcra_tmplts"]=get_template("%s/A/template_names.txt" % tmplt_path_prefix)
     out_json["tcrb_tmplts"]=get_template("%s/B/template_names.txt" % tmplt_path_prefix)
 
-    json_output_path = os.path.join(out_dir, 'statistics.json')
-    with open(json_output_path, 'w') as f:
-        f.write(json.dumps(out_json, indent=4))
 
     # clean up unwanted files
     subprocess.run("mv %s/%s/ranked*pdb %s/; " % (out_dir, job_id, out_dir), shell=True)
     subprocess.run("rm -rf %s/%s*; " % (out_dir, job_id), shell=True)
+
 
     ####################
     # # Renumber output  #
@@ -161,6 +159,63 @@ def main(_argv):
             subprocess.run("mv %s %s" % (pdb_aln, pdb), shell=True)
     except:
         print("unable to align pdbs")
+
+    #parse tcr template sequences 
+    tcra=out_json["tcra_tmplts"]
+    tcra_seqs={}
+    for pdb_chain in tcra:
+        in_seq=parse_tcr_seq.get_seq(pdb_chain)
+        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
+        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
+        tcra_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
+
+    tcrb=out_json['tcrb_tmplts']
+    tcrb_seqs={}
+    for pdb_chain in tcrb:
+        in_seq=parse_tcr_seq.get_seq(pdb_chain)
+        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
+        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
+        tcrb_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
+
+    tcr_out_json={}
+    tcr_out_json["tcra_seqs"]=tcra_seqs
+    tcr_out_json["tcrb_seqs"]=tcrb_seqs
+
+    anarci_out=parse_tcr_seq.anarci_custom(tcra_seq)
+    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+    v_gene, j_gene=parse_tcr_seq.get_germlines(tcra_seq)
+    tcr_out_json["tcra_user"]=[cdr3, seq, v_gene, j_gene]
+
+    anarci_out=parse_tcr_seq.anarci_custom(tcrb_seq)
+    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
+    v_gene, j_gene=parse_tcr_seq.get_germlines(tcrb_seq)
+    tcr_out_json["tcrb_user"]=[cdr3, seq, v_gene, j_gene]
+
+    tcr_json_output_path = os.path.join(out_dir, 'tcr_seqs.json')
+    with open(tcr_json_output_path, 'w') as f:
+        f.write(json.dumps(tcr_out_json, indent=4))
+
+
+    #get CDR3s confidence scores 
+    def get_cdr3_conf(pdb_path):
+       import MDAnalysis as mda
+       pdb_u = mda.Universe(pdb_path)
+       cdr3a_bfactors_avg = pdb_u.select_atoms('chainID D and resid 106:139').atoms.bfactors.mean()
+       cdr3b_bfactors_avg = pdb_u.select_atoms('chainID E and resid 106:139').atoms.bfactors.mean()
+       return cdr3a_bfactors_avg, cdr3b_bfactors_avg
+
+    models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
+    for model in models_list:
+       cdr3a_bfactors_avg, cdr3b_bfactors_avg = get_cdr3_conf(model)
+       out_json[os.path.basename(model).split('.pdb')[0]]['cdr3a_plddt'] = cdr3a_bfactors_avg
+       out_json[os.path.basename(model).split('.pdb')[0]]['cdr3b_plddt'] = cdr3b_bfactors_avg
+
+    json_output_path = os.path.join(out_dir, 'statistics.json')
+    with open(json_output_path, 'w') as f:
+        f.write(json.dumps(out_json, indent=4))
+
 
 if __name__ == '__main__':
     try:
