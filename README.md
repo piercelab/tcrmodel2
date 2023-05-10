@@ -1,6 +1,10 @@
 ## TCRmodel2
 To model TCR-pMHC complex structures, as well as unbound TCR structures, with high fidelity. Also available as a server through https://tcrmodel.ibbr.umd.edu/
 
+If you used our tool, please cite:
+
+Yin R, Ribeiro-Filho HV, Lin V, Gowthaman R, Cheung M, Pierce BG. (2023) TCRmodel2: high-resolution modeling of T cell receptor recognition using deep learning. Nucleic Acids Res. In press. https://doi.org/10.1093/nar/gkad356
+
 ## Table of contents
 - [Quick start](#quick-start)
 - [Generate TCR-pMHC complex predictions](#TCRpMHC-predictions)
