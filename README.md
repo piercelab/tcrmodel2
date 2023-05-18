@@ -1,7 +1,9 @@
 ## TCRmodel2
 To model TCR-pMHC complex structures, as well as unbound TCR structures, with high fidelity. 
 
-While you have the option to download and install TCRmodel2 locally, we highly recommend utilizing our webserver for generating predictions. The webserver offers a user-friendly interface and eliminates the need for local installations. You can access the webserver at the following URL: https://tcrmodel.ibbr.umd.edu/
+While you have the option to download and install TCRmodel2 locally, we highly recommend utilizing our webserver for generating predictions. The webserver offers a user-friendly interface and eliminates the need for local installations. You can access the webserver at the following URL: 
+
+https://tcrmodel.ibbr.umd.edu/
 
 If you used our tool, please cite:
 
