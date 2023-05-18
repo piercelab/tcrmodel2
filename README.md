@@ -1,5 +1,7 @@
 ## TCRmodel2
-To model TCR-pMHC complex structures, as well as unbound TCR structures, with high fidelity. Also available as a server through https://tcrmodel.ibbr.umd.edu/
+To model TCR-pMHC complex structures, as well as unbound TCR structures, with high fidelity. 
+
+While you have the option to download and install TCRmodel2 locally, we highly recommend utilizing our webserver for generating predictions. The webserver offers a user-friendly interface and eliminates the need for local installations. You can access the webserver at the following URL: https://tcrmodel.ibbr.umd.edu/
 
 ## Table of contents
 - [Quick start](#quick-start)
@@ -14,15 +16,16 @@ To model TCR-pMHC complex structures, as well as unbound TCR structures, with hi
 NVIDIA cuda driver >= 11.2
 
 ### Install softwares
-You may refer to the environment.yml file for package installation. Alternatively, you may follow these steps:
-1. Install alphaFold requirements. Here's a useful resource if you prefer to install AlphaFold without Docker: https://github.com/kalininalab/alphafold_non_docker 
-2. Install additional packages: [ANARCI](https://github.com/oxpig/ANARCI) and [MDAnalysis](https://www.mdanalysis.org/pages/installation_quick_start/). These two packages are not required for generating structural predictions. ANARCI is used to trim TCR to variable domains only, and for renumbering PDB outputs. MDAnalysis is used for output renumbering and output alignment.
+To install the dependencies, we recommend the following steps:
+1. Install alphaFold requirements in a conda environment. Here's a useful resource if you prefer to install AlphaFold without Docker: https://github.com/kalininalab/alphafold_non_docker 
+2. Install additional packages: [ANARCI](https://github.com/oxpig/ANARCI) and [MDAnalysis](https://www.mdanalysis.org/pages/installation_quick_start/) to the conda environment created from previous step. These two packages are not required for generating structural predictions. ANARCI is used to trim TCR to variable domains only, and for renumbering PDB outputs. MDAnalysis is used for output renumbering and output alignment.
 
 ``` bash
 conda install -c bioconda anarci
 conda config --add channels conda-forge
 conda install mdanalysis
 ``` 
+
 ### Download database
 While the majority of database files can be found in data/dabases/ folder, due to file size limit, one would need to: 
 1. unzip pdb sequence database file:
@@ -30,7 +33,7 @@ While the majority of database files can be found in data/dabases/ folder, due t
 cd data/databases
 tar -xvzf pdb_seqres.txt.tar.gz
 ```
-2. download pdb_mmcif database (around 104 GB after unzip) used by alphafold to a database folder of your choice, the path of which will be pass as a ori_db variable to the run_tcrmodel2.py and run_tcrmodel2_ub_tcr.py script. Please refer to the download instructions in [download_pdb_mmcif.sh](https://github.com/deepmind/alphafold/blob/18e12d61314214c51ca266d192aad3cc6619018a/scripts/download_pdb_mmcif.sh) in [alphafold](https://github.com/deepmind/alphafold/) repository. 
+2. download pdb_mmcif and params database (around 120 GB total after unzip) used by alphafold to a database folder of your choice, the path of which will be pass as a ori_db variable to the run_tcrmodel2.py and run_tcrmodel2_ub_tcr.py script. Please refer to the download instructions in [download_pdb_mmcif.sh](https://github.com/deepmind/alphafold/blob/18e12d61314214c51ca266d192aad3cc6619018a/scripts/download_pdb_mmcif.sh) and [download_alphafold_params.sh](https://github.com/deepmind/alphafold/blob/main/scripts/download_alphafold_params.sh) in [alphafold](https://github.com/deepmind/alphafold/) repository. 
 
 ## Generate TCR-pMHC complex predictions
 Workflow for creating TCR-pMHC complex structure predictions:
@@ -51,7 +54,7 @@ python run_tcrmodel2.py \
 --tcrb_seq=NAGVTQTPKFQVLKTGQSMTLQCSQDMNHEYMSWYRQDPGMGLRLIHYSVGAGITDQGEVPNGYNVSRSTTEDFPLRLLSAAPSQTSVYFCASSYSIRGSRGEQFFGPGTRLTVL \
 --pep_seq=RLPAKAPLL \
 --mhca_seq=SHSLKYFHTSVSRPGRGEPRFISVGYVDDTQFVRFDNDAASPRMVPRAPWMEQEGSEYWDRETRSARDTAQIFRVNLRTLRGYYNQSEAGSHTLQWMHGCELGPDGRFLRGYEQFAYDGKDYLTLNEDLRSWTAVDTAAQISEQKSNDASEAEHQRAYLEDTCVEWLHKYLEKGKETLLH \
---ori_db=/path/to/folder/with/pdb_mmcif/
+--ori_db=/path/to/alphafold_database #set it as the path to the folder containing pdb_mmcif and params
 ```
 
 To make a class II TCR-pMHC prediction:
@@ -64,7 +67,7 @@ python run_tcrmodel2.py \
 --pep_seq=LAWEWWRTV \
 --mhca_seq=IKADHVSTYAAFVQTHRPTGEFMFEFDEDEMFYVDLDKKETVWHLEEFGQAFSFEAQGGLANIAILNNNLNTLIQRSNHTQAT \
 --mhcb_seq=PENYLFQGRQECYAFNGTQRFLERYIYNREEFARFDSDVGEFRAVTELGRPAAEYWNSQKDILEEKRAVPDRMCRHNYELGGPMTLQR \
---ori_db=/path/to/folder/with/pdb_mmcif/
+--ori_db=/path/to/alphafold_database #set it as the path to the folder containing pdb_mmcif and params
 ```
 
 You may use additional flags in run_tcrmodel2.py to control additional behaviors of the script. To see a list of flags:
@@ -86,7 +89,7 @@ python run_tcrmodel2_ub_tcr.py \
 --output_dir=experiments \
 --tcra_seq=SQQGEEDPQALSIQEGENATMNCSYKTSINNLQWYRQNSGRGLVHLILIRSNEREKHSGRLRVTLDTSKKSSSLLITASRAADTASYFCATDKKGGATNKLIFGTGTLLAVQP \
 --tcrb_seq=NAGVTQTPKFRVLKTGQSMTLLCAQDMNHEYMYWYRQDPGMGLRLIHYSVGEGTTAKGEVPDGYNVSRLKKQNFLLGLESAAPSQTSVYFCASSQGGGEQYFGPGTRLTVT \
---ori_db=/path/to/folder/with/pdb_mmcif/
+--ori_db=/path/to/alphafold_database #set it as the path to the folder containing pdb_mmcif and params
 ```
 
 You may use additional flags in run_tcrmodel2_ub_tcr.py to control additional behaviors of the script. To see a list of flags:
