@@ -147,8 +147,7 @@ def main(_argv):
     # build structure #
     ###################
     # model_log_output=os.path.join(out_dir, "modeling_log.txt")
-    cmd=(f"CUDA_VISIBLE_DEVICES={cuda_device} python "
-         f"run_alphafold_tcrmodel2.3.py --db_preset=reduced_dbs "
+    cmd=(f"python run_alphafold_tcrmodel2.3.py --db_preset=reduced_dbs "
          f"--fasta_paths={out_dir}/{job_id}_pmhc_oc.fasta "
          f"--model_preset=multimer --output_dir={out_dir} {databases} "
          "--use_custom_templates --template_alignfile=UseDefaultTemplate,"
