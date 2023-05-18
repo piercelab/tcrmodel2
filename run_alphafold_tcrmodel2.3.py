@@ -23,8 +23,6 @@ import shutil
 import sys
 import time
 from typing import Any, Dict, Mapping, Union
-root_dir="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3"
-sys.path.insert(1,root_dir)
 
 from absl import app
 from absl import flags
@@ -65,7 +63,7 @@ flags.DEFINE_list(
     'separated by commas. All FASTA paths must have a unique basename as the '
     'basename is used to name the output directories for each prediction.')
 
-flags.DEFINE_string('data_dir', "/scratch/Pierce/alphafold_v2.3_db/", 
+flags.DEFINE_string('data_dir', None, 
                     'Path to directory of supporting data.')
 flags.DEFINE_string('output_dir', None, 'Path to a directory that will '
                     'store the results.')

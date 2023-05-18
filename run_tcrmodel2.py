@@ -28,8 +28,8 @@ flags.DEFINE_bool('relax_structures', False, "Run amber minimization "
                   "on the structures")
 flags.DEFINE_string("tp_db", "data/databases" , 
                     "Customized TCR pMHC database path")
-flags.DEFINE_string("ori_db", "data/databases",
-                    "Path to the database with pdb_mmcif database")
+flags.DEFINE_string("ori_db", None,
+                    "Path to AlphaFold database with pdb_mmcif and params")
 flags.DEFINE_integer("cuda_device", 1, 
                     "Visible cuda device number")
 FLAGS = flags.FLAGS
@@ -128,7 +128,8 @@ def main(_argv):
             f"--obsolete_pdbs_path={ori_db}/pdb_mmcif/obsolete.dat "
             f"--small_bfd_database_path={tp_db}/small_bfd.tcrmhc.fasta "
             f"--pdb_seqres_database_path={tp_db}/pdb_seqres.txt "
-            f"--uniprot_database_path={tp_db}/uniprot.tcrmhc.fasta")
+            f"--uniprot_database_path={tp_db}/uniprot.tcrmhc.fasta "
+            f"--data_dir={ori_db}")
     cmd=(f"python run_alphafold_tcrmodel2.3.py --db_preset=reduced_dbs "
          f"--fasta_paths={out_dir}/{job_id}.fasta "
          f"--model_preset=multimer --output_dir={out_dir} {databases} "
