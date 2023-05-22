@@ -4,16 +4,9 @@ import anarci
 import sys
 from anarci import anarci
 
-# fn="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/experiments/6zkw/statistics.json"
-# fn=sys.argv[1]
-# user_json=sys.argv[2]
-# json_output_path=sys.argv[3]
-
-# with open(fn) as fh:
-#     f=json.load(fh)
 
 def get_seq(pdb_chain):
-    command="grep -A1 %s /piercehome/alphafold/genetic_databases/pdb_seqres/pdb_seqres.txt" % (pdb_chain)
+    command="grep -A1 %s data/databases/pdb_seqres.txt" % (pdb_chain)
     output = subprocess.getoutput(command)
     return output.split("\n")[1]
 
@@ -49,39 +42,3 @@ def get_germlines(seq:str):
         v_gene = 'NA'
         j_gene = 'NA'
     return v_gene, j_gene
-
-# tcra=f['tcra_tmplts']
-# tcra_seqs={}
-# for pdb_chain in tcra:
-#     in_seq=get_seq(pdb_chain)
-#     anarci_out=anarci(in_seq)
-#     cdr3, seq=parse_anarci(anarci_out)
-#     tcra_seqs[pdb_chain]=[cdr3, seq]
-
-# tcrb=f['tcrb_tmplts']
-# tcrb_seqs={}
-# for pdb_chain in tcrb:
-#     in_seq=get_seq(pdb_chain)
-#     anarci_out=anarci(in_seq)
-#     cdr3, seq=parse_anarci(anarci_out)
-#     tcrb_seqs[pdb_chain]=[cdr3, seq]
-
-# out_json={}
-# out_json["tcra_seqs"]=tcra_seqs
-# out_json["tcrb_seqs"]=tcrb_seqs
-
-# with open(user_json) as fh:
-#     uf=json.load(fh)
-
-# aseq=uf['aseq_user']
-# anarci_out=anarci(aseq)
-# cdr3, seq=parse_anarci(anarci_out)
-# out_json["tcra_user"]=[cdr3, seq]
-
-# bseq=uf['bseq_user']
-# anarci_out=anarci(bseq)
-# cdr3, seq=parse_anarci(anarci_out)
-# out_json["tcrb_user"]=[cdr3, seq]
-
-# with open(json_output_path, 'w') as f:
-#     f.write(json.dumps(out_json, indent=4))

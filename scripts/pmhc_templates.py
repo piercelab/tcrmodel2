@@ -203,19 +203,20 @@ def gen_align_file_cls1(
         mhc_seq, 
         out_dir, 
         ignore_pdbs, 
+        # data_dir,
         cutoff="2100-01-01"
         ):
     # generate full alignment file for a given query in class I
 
     # read all nr class I complexes as dataframe
-    fn="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/nr_cls_I_complexes.txt"
+    fn="data/templates/nr_cls_I_complexes.txt"
     df1=pd.read_csv(fn,sep="\t")
     cutoff = datetime.strptime(cutoff, '%Y-%m-%d')
 
     tmplt_dict=get_best_hit_cls1(pep_seq, mhc_seq, df1, ignore_pdbs, cutoff)
     tmplt_out=""
     for (tmplt_name,score) in tmplt_dict:
-        tmplt_pdb="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/pdb/%s.pmhc.pdb" % tmplt_name
+        tmplt_pdb="data/templates/pdb/%s.pmhc.pdb" % tmplt_name
         tmplt_out+=gen_align_for_given_tmplt_cls1(tmplt_pdb, len(pep_seq),mhc_seq)
 
     tmplt_aln_file=os.path.join(out_dir, "pmhc_alignment.tsv")    
@@ -232,14 +233,14 @@ def gen_align_file_cls2(
     # generate full alignment file for a given query in class II
 
     # read all nr class II complexes as dataframe
-    fn="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/nr_cls_II_complexes.txt"
+    fn="data/templates/nr_cls_II_complexes.txt"
     df2=pd.read_csv(fn,sep="\t")
     cutoff = datetime.strptime(cutoff, '%Y-%m-%d')
 
     tmplt_dict=get_best_hit_cls2(pep_seq, mhc1_seq, mhc2_seq, df2, ignore_pdbs, cutoff)
     tmplt_out=""
     for (tmplt_name,score) in tmplt_dict:
-        tmplt_pdb="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/pdb/%s.pmhc.pdb" % tmplt_name
+        tmplt_pdb="data/templates/pdb/%s.pmhc.pdb" % tmplt_name
         tmplt_out+=gen_align_for_given_tmplt_cls2(tmplt_pdb, len(pep_seq), mhc1_seq, mhc2_seq)
 
     tmplt_aln_file=os.path.join(out_dir, "pmhc_alignment.tsv")
@@ -256,14 +257,14 @@ def gen_align_file_corep1_cls2(
     # generate full alignment file for a given query in class II
 
     # read all nr class II complexes as dataframe
-    fn="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/nr_cls_II_complexes.txt"
+    fn="data/templates/nr_cls_II_complexes.txt"
     df2=pd.read_csv(fn,sep="\t")
     cutoff = datetime.strptime(cutoff, '%Y-%m-%d')
 
     tmplt_dict=get_best_hit_corep1_cls2(pep_seq, mhc1_seq, mhc2_seq, df2, ignore_pdbs, cutoff)
     tmplt_out=""
     for (tmplt_name,score) in tmplt_dict:
-        tmplt_pdb="/piercehome/tcr/TCRmodel-2.0/algorithm_2.3/data/templates/pdb/cp1/%s.pmhc.pdb" % tmplt_name
+        tmplt_pdb="data/templates/pdb/cp1/%s.pmhc.pdb" % tmplt_name
         tmplt_out+=gen_align_for_given_tmplt_cls2(tmplt_pdb, len(pep_seq), mhc1_seq, mhc2_seq)
 
     tmplt_aln_file=os.path.join(out_dir, "pmhc_alignment.tsv")

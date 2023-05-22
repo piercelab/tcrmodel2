@@ -6,6 +6,8 @@ import json
 from absl import flags
 from absl import app
 from glob import glob
+# import shutil
+
 import subprocess
 
 from scripts import pmhc_templates, seq_utils, tcr_utils, pdb_utils, parse_tcr_seq
@@ -32,6 +34,8 @@ flags.DEFINE_string("ori_db", None,
                     "Path to AlphaFold database with pdb_mmcif and params")
 flags.DEFINE_integer("cuda_device", 1, 
                     "Visible cuda device number")
+# flags.DEFINE_string('tcr_docking_angle_exec', shutil.which('tcr_docking_angle_exec'),
+#                     'Path to the tcr_docking_angle executable.')
 FLAGS = flags.FLAGS
 
 def main(_argv):
@@ -245,26 +249,25 @@ def main(_argv):
 
     # compute angle 
 
-    def get_docking_angles(tcr_docking_angle_exec, target_pdb, mhc_type):
-        result = subprocess.run([f'{tcr_docking_angle_exec} {target_pdb} {mhc_type}'], shell=True, capture_output=True, text=True)
-        parse_result = result.stdout.split("\n")
-        get_angles = [i for i in parse_result if i.startswith('ANGLES')][0].split("\t")
-        docking_angle = float(get_angles[1])
-        inc_angle = float(get_angles[2])
-        return docking_angle, inc_angle
+    # def get_docking_angles(tcr_docking_angle_exec, target_pdb, mhc_type):
+    #     result = subprocess.run([f'{tcr_docking_angle_exec} {target_pdb} {mhc_type}'], shell=True, capture_output=True, text=True)
+    #     parse_result = result.stdout.split("\n")
+    #     get_angles = [i for i in parse_result if i.startswith('ANGLES')][0].split("\t")
+    #     docking_angle = float(get_angles[1])
+    #     inc_angle = float(get_angles[2])
+    #     return docking_angle, inc_angle
 
-    dock_dict = {}
-    inc_dict = {} 
-    tcr_docking_angle_exec = '/piercehome/programs/tcr_docking_angle/tcr_docking_angle'     
-    models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
-    for model in models_list:
-        if mhc_cls==1:
-            dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=0)
-        else:
-            dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=1)
-        dock_dict.update({os.path.basename(model):dock_ang})
-        inc_dict.update({os.path.basename(model):inc_ang})        
-    out_json['angles'] = {'docking_angle':dock_dict,'incident_angle':inc_dict}
+    # dock_dict = {}
+    # inc_dict = {} 
+    # models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
+    # for model in models_list:
+    #     if mhc_cls==1:
+    #         dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=0)
+    #     else:
+    #         dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=1)
+    #     dock_dict.update({os.path.basename(model):dock_ang})
+    #     inc_dict.update({os.path.basename(model):inc_ang})        
+    # out_json['angles'] = {'docking_angle':dock_dict,'incident_angle':inc_dict}
     
 
     #get CDR3s confidence scores 

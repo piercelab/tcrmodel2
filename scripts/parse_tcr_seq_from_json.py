@@ -12,7 +12,7 @@ with open(fn) as fh:
     f=json.load(fh)
 
 def get_seq(pdb_chain):
-    command="grep -A1 %s /piercehome/alphafold/genetic_databases/pdb_seqres/pdb_seqres.txt" % (pdb_chain)
+    command="grep -A1 %s data/databases/pdb_seqres.txt" % (pdb_chain)
     output = subprocess.getoutput(command)
     return output.split("\n")[1]
 
