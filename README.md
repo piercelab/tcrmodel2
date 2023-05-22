@@ -18,6 +18,8 @@ Yin R, Ribeiro-Filho HV, Lin V, Gowthaman R, Cheung M, Pierce BG. (2023) TCRmode
 - [Copyright and license](#copyright-and-license)
 
 ## Quick start
+The TCRmodel2 code is adapted from AlphaFold v.2.3.0. 
+
 ### Requirements
 NVIDIA cuda driver >= 11.2
 
@@ -39,7 +41,7 @@ While the majority of database files can be found in data/dabases/ folder, due t
 cd data/databases
 tar -xvzf pdb_seqres.txt.tar.gz
 ```
-2. download pdb_mmcif and params database (around 120 GB total after unzip) used by alphafold to a database folder of your choice, the path of which will be pass as a ori_db variable to the run_tcrmodel2.py and run_tcrmodel2_ub_tcr.py script. Please refer to the download instructions in [download_pdb_mmcif.sh](https://github.com/deepmind/alphafold/blob/18e12d61314214c51ca266d192aad3cc6619018a/scripts/download_pdb_mmcif.sh) and [download_alphafold_params.sh](https://github.com/deepmind/alphafold/blob/main/scripts/download_alphafold_params.sh) in [alphafold](https://github.com/deepmind/alphafold/) repository. 
+2. download pdb_mmcif and params database (around 120 GB total after unzip) used by alphafold to a database folder of your choice, the path of which will be pass as a ori_db variable to the run_tcrmodel2.py and run_tcrmodel2_ub_tcr.py script. Please refer to the download instructions in [download_pdb_mmcif.sh](https://github.com/deepmind/alphafold/blob/18e12d61314214c51ca266d192aad3cc6619018a/scripts/download_pdb_mmcif.sh) and [download_alphafold_params.sh](https://github.com/deepmind/alphafold/blob/6a3af1adb3bbbc53562da100e3819b2fc882f915/scripts/download_alphafold_params.sh) in [alphafold](https://github.com/deepmind/alphafold/) repository. 
 
 ## Generate TCR-pMHC complex predictions
 Workflow for creating TCR-pMHC complex structure predictions:
