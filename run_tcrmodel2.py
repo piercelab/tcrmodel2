@@ -1,16 +1,18 @@
 # Load required packages
-import os
-import sys
 # import pandas as pd
 import json
-from absl import flags
-from absl import app
+import os
+import subprocess
+import sys
 from glob import glob
+
+from absl import app, flags
+
+from scripts import parse_tcr_seq, pdb_utils, pmhc_templates, seq_utils, tcr_utils
+
 # import shutil
 
-import subprocess
 
-from scripts import pmhc_templates, seq_utils, tcr_utils, pdb_utils, parse_tcr_seq
 
 # input
 flags.DEFINE_string('output_dir', "experiments/", 
@@ -290,38 +292,17 @@ def main(_argv):
     with open(json_output_path, 'w') as f:
         f.write(json.dumps(out_json, indent=4))
 
-    #parse tcr template sequences 
-    tcra=out_json["tcra_tmplts"]
-    tcra_seqs={}
-    for pdb_chain in tcra:
-        in_seq=parse_tcr_seq.get_seq(pdb_chain)
-        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
-        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
-        tcra_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
+    tcr_out_json = {}
+    #parse tcr template sequences
+    for chain in "ab":
+        tcr_key = f"tcr{chain}_seqs"
+        tcr_out_json[tcr_key] = {}
+        for pdb_chain in out_json[f"tcr{chain}_tmplts"]:
+            in_seq = parse_tcr_seq.get_seq(pdb_chain)
+            tcr_out_json[tcr_key][pdb_chain] = parse_tcr_seq.parse_tcr(in_seq)
 
-    tcrb=out_json['tcrb_tmplts']
-    tcrb_seqs={}
-    for pdb_chain in tcrb:
-        in_seq=parse_tcr_seq.get_seq(pdb_chain)
-        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
-        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
-        tcrb_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
-
-    tcr_out_json={}
-    tcr_out_json["tcra_seqs"]=tcra_seqs
-    tcr_out_json["tcrb_seqs"]=tcrb_seqs
-
-    anarci_out=parse_tcr_seq.anarci_custom(tcra_seq)
-    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-    v_gene, j_gene=parse_tcr_seq.get_germlines(tcra_seq)
-    tcr_out_json["tcra_user"]=[cdr3, seq, v_gene, j_gene]
-
-    anarci_out=parse_tcr_seq.anarci_custom(tcrb_seq)
-    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-    v_gene, j_gene=parse_tcr_seq.get_germlines(tcrb_seq)
-    tcr_out_json["tcrb_user"]=[cdr3, seq, v_gene, j_gene]
+    tcr_out_json["tcra_user"] = parse_tcr_seq.parse_tcr(tcra_seq)
+    tcr_out_json["tcrb_user"] = parse_tcr_seq.parse_tcr(tcrb_seq)
 
     tcr_json_output_path = os.path.join(out_dir, 'tcr_seqs.json')
     with open(tcr_json_output_path, 'w') as f:

@@ -1,7 +1,5 @@
-import json
 import subprocess
-import anarci
-import sys
+
 from anarci import anarci
 
 
@@ -10,22 +8,25 @@ def get_seq(pdb_chain):
     output = subprocess.getoutput(command)
     return output.split("\n")[1]
 
-def anarci_custom(seq):
-    command="ANARCI --scheme aho -i %s" % seq
-    output = subprocess.getoutput(command)
-    return output
 
-def parse_anarci(output):
+def parse_anarci(in_seq):
+    try:
+        command="ANARCI --scheme aho -i %s" % in_seq
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = output.decode("utf-8")  # decode bytes to string
+    except subprocess.CalledProcessError:
+        return "NA", "NA"
+
     cdr3, seq="",""
     for i in output.split("\n"):
-        if i[0]!="#" and i[0]!="/":
-            fields=i.rstrip().split()
-            num=int(fields[1])
-            res=fields[-1]
-            if res!="-":
-                seq+=res
-            if res!="-" and num >= 106 and num <= 139:
-                cdr3+=res
+        if i and i[0] != "#" and i[0] != "/":
+            _, num, res = i.rstrip().split()
+            num = int(num)
+            if res != "-":
+                if num >= 106 and num <= 139:
+                    cdr3 += res
+                else:
+                    seq += res
     return cdr3, seq
 
 
@@ -42,3 +43,10 @@ def get_germlines(seq:str):
         v_gene = 'NA'
         j_gene = 'NA'
     return v_gene, j_gene
+
+
+def parse_tcr(in_seq):
+    cdr3, seq = parse_anarci(in_seq)
+    v_gene, j_gene = get_germlines(in_seq)
+    return [cdr3, seq, v_gene, j_gene]
+
