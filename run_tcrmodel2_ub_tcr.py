@@ -7,6 +7,8 @@ from absl import flags
 from absl import app
 from glob import glob
 import subprocess 
+from anarci import anarci
+
 from scripts import seq_utils,pdb_utils,tcr_utils,parse_tcr_seq
 
 # input
@@ -52,8 +54,10 @@ def main(_argv):
     os.makedirs(out_dir, exist_ok=True)
 
     # trim tcr sequence to variable domain only
-    tcra_seq=seq_utils.trim_tcr(tcra_seq)
-    tcrb_seq=seq_utils.trim_tcr(tcrb_seq)
+    anarci_tcra=anarci([('tcra', tcra_seq)], scheme="aho", output=False)
+    anarci_tcrb=anarci([('tcrb', tcrb_seq)], scheme="aho", output=False)
+    tcra_seq="".join([item[-1] for item in anarci_tcra[0][0][0][0] if item[-1] != '-'])
+    tcrb_seq="".join([item[-1] for item in anarci_tcrb[0][0][0][0] if item[-1] != '-'])
 
     # create fasta files 
     fasta_fn=os.path.join(out_dir, "%s.fasta" % job_id)
@@ -87,18 +91,19 @@ def main(_argv):
 
     # renumber chains to start with A if not relax_structures
     if not relax_structures:
-        for i in range(5):
-            pdb_fn="%s/%s/ranked_%d.pdb" % (out_dir, job_id, i)
+        models_list = [i for i in glob(f"{out_dir}/{job_id}/*.pdb") if os.path.basename(i).startswith('ranked')]
+        for pdb_fn in models_list:
             pdb=[]
             with open(pdb_fn) as fh:
                 for line in fh:
                     if line[0:4] == 'ATOM':
                         pdb.append(line.rstrip())
             pdb_renum=pdb_utils.rename_chains_start_A_and_1(pdb)
-            pdb_renum_fn="%s/%s/ranked_%d_renum.pdb"% (out_dir, job_id, i)
+            pdb_renum_fn = pdb_fn.replace('.pdb', '_renum.pdb')
             with open(pdb_renum_fn,'w+') as fh:
                 fh.write("\n".join(pdb_renum))
             subprocess.run("mv %s %s" % (pdb_renum_fn, pdb_fn), shell=True)
+
 
     ####################
     # Parse statistics #
@@ -150,48 +155,27 @@ def main(_argv):
 
     # align all to ranked_0's pMHC
     try:
-        for i in range(1,5):
-            pdb="%s/ranked_%d.pdb" % (out_dir,i)
-            pdb_aln="%s/ranked_%d_aln.pdb" % (out_dir,i)
-
-            ref="%s/ranked_0.pdb" % out_dir
+        models_list = [i for i in glob(f"{out_dir}/*.pdb") if os.path.basename(i).startswith('ranked')]
+        ref="%s/ranked_0.pdb" % out_dir
+        for pdb in models_list:
+            pdb_aln = pdb.replace('.pdb', '_aln.pdb')
             pdb_utils.align_pdbs(ref, pdb, pdb_aln)
             subprocess.run("mv %s %s" % (pdb_aln, pdb), shell=True)
     except:
         print("unable to align pdbs")
 
-    #parse tcr template sequences 
-    tcra=out_json["tcra_tmplts"]
-    tcra_seqs={}
-    for pdb_chain in tcra:
-        in_seq=parse_tcr_seq.get_seq(pdb_chain)
-        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
-        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
-        tcra_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
-
-    tcrb=out_json['tcrb_tmplts']
-    tcrb_seqs={}
-    for pdb_chain in tcrb:
-        in_seq=parse_tcr_seq.get_seq(pdb_chain)
-        anarci_out=parse_tcr_seq.anarci_custom(in_seq)
-        cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-        v_gene, j_gene=parse_tcr_seq.get_germlines(in_seq)
-        tcrb_seqs[pdb_chain]=[cdr3, seq, v_gene, j_gene]
-
+    #parse tcr template sequences
     tcr_out_json={}
-    tcr_out_json["tcra_seqs"]=tcra_seqs
-    tcr_out_json["tcrb_seqs"]=tcrb_seqs
+    for chain in "ab":
+        tcr_key = f"tcr{chain}_seqs"
+        tcr_out_json[tcr_key] = {}
+        for pdb_chain in out_json[f"tcr{chain}_tmplts"]:
+            in_seq = parse_tcr_seq.get_seq(pdb_chain)
+            tcr_out_json[tcr_key][pdb_chain] = parse_tcr_seq.parse_tcr(in_seq)
 
-    anarci_out=parse_tcr_seq.anarci_custom(tcra_seq)
-    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-    v_gene, j_gene=parse_tcr_seq.get_germlines(tcra_seq)
-    tcr_out_json["tcra_user"]=[cdr3, seq, v_gene, j_gene]
+    tcr_out_json["tcra_user"] = parse_tcr_seq.parse_tcr(tcra_seq)
+    tcr_out_json["tcrb_user"] = parse_tcr_seq.parse_tcr(tcrb_seq)
 
-    anarci_out=parse_tcr_seq.anarci_custom(tcrb_seq)
-    cdr3, seq=parse_tcr_seq.parse_anarci(anarci_out)
-    v_gene, j_gene=parse_tcr_seq.get_germlines(tcrb_seq)
-    tcr_out_json["tcrb_user"]=[cdr3, seq, v_gene, j_gene]
 
     tcr_json_output_path = os.path.join(out_dir, 'tcr_seqs.json')
     with open(tcr_json_output_path, 'w') as f:

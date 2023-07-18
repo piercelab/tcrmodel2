@@ -7,6 +7,7 @@ import sys
 from glob import glob
 
 from absl import app, flags
+from anarci import anarci
 
 from scripts import parse_tcr_seq, pdb_utils, pmhc_templates, seq_utils, tcr_utils
 
@@ -79,8 +80,11 @@ def main(_argv):
         mhc_cls=2
     
     # trim tcr sequence to variable domain only
-    tcra_seq=seq_utils.trim_tcr(tcra_seq)
-    tcrb_seq=seq_utils.trim_tcr(tcrb_seq)
+    anarci_tcra=anarci([('tcra', tcra_seq)], scheme="aho", output=False)
+    anarci_tcrb=anarci([('tcrb', tcrb_seq)], scheme="aho", output=False)
+    tcra_seq="".join([item[-1] for item in anarci_tcra[0][0][0][0] if item[-1] != '-'])
+    tcrb_seq="".join([item[-1] for item in anarci_tcrb[0][0][0][0] if item[-1] != '-'])
+
     # trim mhc sequence to relevant domains only
     if mhc_cls==1:
         mhca_seq=seq_utils.trim_mhc(mhca_seq, "1", ".", out_dir)
@@ -169,15 +173,15 @@ def main(_argv):
 
     # renumber chains to start with A if not relax_structures
     if not relax_structures:
-        for i in range(5):
-            pdb_fn="%s/%s_pmhc_oc/ranked_%d.pdb" % (out_dir, job_id, i)
+        models_list = [i for i in glob(f"{out_dir}/{job_id}_pmhc_oc/*.pdb") if os.path.basename(i).startswith('ranked')]
+        for pdb_fn in models_list:
             pdb=[]
             with open(pdb_fn) as fh:
                 for line in fh:
                     if line[0:4] == 'ATOM':
                         pdb.append(line.rstrip())
             pdb_renum=pdb_utils.rename_chains_start_A_and_1(pdb)
-            pdb_renum_fn="%s/%s_pmhc_oc/ranked_%d_renum.pdb"% (out_dir, job_id, i)
+            pdb_renum_fn = pdb_fn.replace('.pdb', '_renum.pdb')
             with open(pdb_renum_fn,'w+') as fh:
                 fh.write("\n".join(pdb_renum))
             subprocess.run("mv %s %s" % (pdb_renum_fn, pdb_fn), shell=True)
@@ -239,38 +243,15 @@ def main(_argv):
 
     # align all to ranked_0's pMHC
     try:
-        for i in range(1,5):
-            pdb="%s/ranked_%d.pdb" % (out_dir,i)
-            pdb_aln="%s/ranked_%d_aln.pdb" % (out_dir,i)
-
-            ref="%s/ranked_0.pdb" % out_dir
+        models_list = [i for i in glob(f"{out_dir}/*.pdb") if os.path.basename(i).startswith('ranked')]
+        ref="%s/ranked_0.pdb" % out_dir
+        for pdb in models_list:
+            pdb_aln = pdb.replace('.pdb', '_aln.pdb')
             pdb_utils.align_pdbs_by_pmhc(ref, pdb, pdb_aln, mhc_cls)
             subprocess.run("mv %s %s" % (pdb_aln, pdb), shell=True)
     except:
         print("unable to align pdbs")
 
-    # compute angle 
-
-    # def get_docking_angles(tcr_docking_angle_exec, target_pdb, mhc_type):
-    #     result = subprocess.run([f'{tcr_docking_angle_exec} {target_pdb} {mhc_type}'], shell=True, capture_output=True, text=True)
-    #     parse_result = result.stdout.split("\n")
-    #     get_angles = [i for i in parse_result if i.startswith('ANGLES')][0].split("\t")
-    #     docking_angle = float(get_angles[1])
-    #     inc_angle = float(get_angles[2])
-    #     return docking_angle, inc_angle
-
-    # dock_dict = {}
-    # inc_dict = {} 
-    # models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
-    # for model in models_list:
-    #     if mhc_cls==1:
-    #         dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=0)
-    #     else:
-    #         dock_ang, inc_ang = get_docking_angles(tcr_docking_angle_exec=tcr_docking_angle_exec, target_pdb=model, mhc_type=1)
-    #     dock_dict.update({os.path.basename(model):dock_ang})
-    #     inc_dict.update({os.path.basename(model):inc_ang})        
-    # out_json['angles'] = {'docking_angle':dock_dict,'incident_angle':inc_dict}
-    
 
     #get CDR3s confidence scores 
     def get_cdr3_conf(pdb_path):
