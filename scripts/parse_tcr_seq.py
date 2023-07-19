@@ -14,7 +14,8 @@ def parse_anarci(in_seq):
         command = "ANARCI --scheme aho -i %s" % in_seq
         output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
         output = output.decode("utf-8")  # decode bytes to string
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(f"ANARCI failed for {in_seq} with error: {e.output.decode('utf-8')}")
         return "NA", "NA"
 
     cdr3, seq = "", ""
