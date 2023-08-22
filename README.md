@@ -90,7 +90,7 @@ Workflow for creating TCR-pMHC complex structure predictions:
 3. Predict structures
 4. Output 5 structures and a text file containing 1) templates used 2) prediction scores 
 
-To make a class II TCR-pMHC prediction:
+To make a unbound TCR prediction:
 ``` bash
 python run_tcrmodel2_ub_tcr.py \
 --job_id=test_tcr_7t2b \
