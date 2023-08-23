@@ -21,8 +21,18 @@ flags.DEFINE_string('output_dir', "experiments/",
 flags.DEFINE_string('tcra_seq', None, 'TCR alpha sequence')
 flags.DEFINE_string('tcrb_seq', None, 'TCR beta sequence')
 flags.DEFINE_string('pep_seq', None, 'Peptide sequence')
-flags.DEFINE_string('mhca_seq', None, 'MHC alpha sequence')
-flags.DEFINE_string('mhcb_seq', None, 'MHC beta sequence')
+flags.DEFINE_string('mhca_seq', None, 'MHC alpha sequence. If your target is a class I '
+                    'TCR-pMHC complex, then this input should contain the alpha 1 and '
+                     'alpha 2 domain sequence. If your target is a class II TCR-pMHC '
+                     'complex, then this input should contain alpha 1 domain sequence. '
+                     'If your input has more than the above-mentioned domain(s), the function '
+                     'seq_utils.trim_mhc will trim the input sequence down to the desired domains.')
+flags.DEFINE_string('mhcb_seq', None, 'MHC beta sequence. Leave this argument blank, or '
+                    'leave it out completely if your target is a class I TCR-pMHC complex. '
+                    'If your target is a class II TCR-pMHC complex, this input should '
+                    'contain beta 1 domain sequence. If your input has more than the '
+                    'above-mentioned domain(s), the function seq_utils.trim_mhc will '
+                    'trim the input sequence down to the desired domains.')
 flags.DEFINE_string('job_id', "test001", 'Job id')
 flags.DEFINE_string('ignore_pdbs_string', None, "Do not use these pdbs as pmhc "
                     "templates, comma seperated pdb string, no space in between. "
@@ -87,11 +97,30 @@ def main(_argv):
 
     # trim mhc sequence to relevant domains only
     if mhc_cls==1:
-        mhca_seq=seq_utils.trim_mhc(mhca_seq, "1", ".", out_dir)
+        try:
+            mhca_seq=seq_utils.trim_mhc(mhca_seq, "1", ".", out_dir)
+        except:
+            print("Fail to identify alpha 1 and alpha 2 domain sequence in the 'mhca_seq' "
+                  "input of your class I MHC target.")
+            sys.exit()
     else:
-        mhca_seq=seq_utils.trim_mhc(mhca_seq, "2", ".", out_dir)
-        mhcb_seq=seq_utils.trim_mhc(mhcb_seq, "3", ".", out_dir)
-
+        try:
+            mhca_seq=seq_utils.trim_mhc(mhca_seq, "2", ".", out_dir)
+        except:
+            print("Fail to identify alpha 1 domain sequence in the 'mhca_seq' "
+                  "input of your class II MHC target. If your input target is a class I "
+                  "TCR-pMHC complex, then mhcb_seq variable should be left empty or left "
+                  "out completely.")
+            sys.exit()
+        try:
+            mhcb_seq=seq_utils.trim_mhc(mhcb_seq, "3", ".", out_dir)
+        except:
+            print("Fail to identify beta 1 domain sequence in the 'mhcb_seq' "
+                  "input of your class II MHC target. If your input target is a class I "
+                  "TCR-pMHC complex, then mhcb_seq variable should be left empty or left "
+                  "out completely.")
+            sys.exit()
+            
     # build pmhc templates
     if mhc_cls==1:
         pmhc_templates.gen_align_file_cls1(pep_seq, mhca_seq, out_dir, ignore_pdbs, max_template_date)
