@@ -80,14 +80,25 @@ def main(_argv):
         except:
             ignore_pdbs=[]
 
-    # # create output directory
+    # create output directory
     out_dir=os.path.join(output_dir,job_id)
     os.makedirs(out_dir, exist_ok=True)
 
-    # # check MHC class of the complex
+    # check MHC class of the complex
     mhc_cls=1
     if mhcb_seq:
         mhc_cls=2
+
+    # check peptide length of the user input
+    pep_len = len(pep_seq)
+    if mhc_cls==1:
+        if pep_len < 8 or pep_len > 15:
+            print(f"It looks like your input peptide is {pep_len} amino acids long. For class I TCR-pMHC complexes, kindly ensure the peptide length is between 8-15.")
+            sys.exit()
+    else:
+        if pep_len != 11:
+            print(f"It looks like your input peptide is {pep_len} amino acids (aa) long. For class II TCR-pMHC complexes, kindly ensure that the peptide input is 11 aa in length. Specifically, it should consist of a 9 aa core with an additional 1 aa at both the N-terminal and C-terminal of the core peptide.")
+            sys.exit()
     
     # trim tcr sequence to variable domain only
     anarci_tcra=anarci([('tcra', tcra_seq)], scheme="aho", output=False)
@@ -120,7 +131,7 @@ def main(_argv):
                   "TCR-pMHC complex, then mhcb_seq variable should be left empty or left "
                   "out completely.")
             sys.exit()
-            
+
     # build pmhc templates
     if mhc_cls==1:
         pmhc_templates.gen_align_file_cls1(pep_seq, mhca_seq, out_dir, ignore_pdbs, max_template_date)

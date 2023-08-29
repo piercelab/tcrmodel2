@@ -52,6 +52,9 @@ Workflow for creating TCR-pMHC complex structure predictions:
 5. Predict structures
 6. Output 5 structures and a text file containing 1) templates used 2) prediction scores 
 
+Peptide length requirement:
+* For class I TCR-pMHC complexes, kindly ensure that the peptide length is between 8-15.
+* For class II TCR-pMHC complexes, kindly ensure that the peptide input is 11 aa in length. Specifically, it should consist of a 9 aa core with an additional 1 aa at both the N-terminal and C-terminal of the core peptide.
 
 To make a class I TCR-pMHC prediction:
 ``` bash
