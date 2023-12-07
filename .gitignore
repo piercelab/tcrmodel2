@@ -2,3 +2,5 @@ __pycache__
 *.pyc
 experiments
 *pdb_seqres.txt
+singularity/test*
+singularity/build*
