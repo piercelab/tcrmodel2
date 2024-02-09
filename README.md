@@ -52,7 +52,7 @@ This project can be set up using Singularity, which allows you to create and run
 
 2. Modify elements of the `singularity/tcrmodel2_singularity.def` like the CUDA version to match your system's configuration.
 
-3. Build the Singularity container. We offer a pre-built Singularity image file that is compatible with CUDA version 11.2, which you can access [here](linktobeadded). However, for greater flexibility and compatibility with the CUDA version on your machine, we recommend building the .sif file from the provided .def file. This approach allows you to tailor the build to your specific system requirements.
+3. Build the Singularity container. We offer a pre-built Singularity image file that is compatible with CUDA version 11.2, which you can access [here](https://piercelab.ibbr.umd.edu/alphafold_tcrmodel_test_cuda112_tfgpu.sif). Please right-click the link and choose 'Save Link As...' to save the file. However, for greater flexibility and compatibility with the CUDA version on your machine, we recommend building the .sif file from the provided .def file. This approach allows you to tailor the build to your specific system requirements.
 
    ```bash
    sudo singularity build tcrmodel2.sif singularity/tcrmodel2_singularity.def
