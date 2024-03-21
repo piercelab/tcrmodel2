@@ -239,11 +239,11 @@ def main(_argv):
         for idx, line in enumerate(fh):
             scores=line.rstrip().split("\t")
             out_json["ranked_%d" % (idx)]={
-                items[0]:scores[0],
-                items[1]:scores[1],
-                items[2]:scores[2],
-                items[3]:scores[3],
-                items[4]:scores[4]
+                items[0]:float(scores[0]),
+                items[1]:float(scores[1]),
+                items[2]:float(scores[2]),
+                items[3]:float(scores[3]),
+                items[4]:float(scores[4])
                 }
 
     #get templates
