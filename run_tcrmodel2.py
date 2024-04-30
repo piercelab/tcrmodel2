@@ -307,6 +307,78 @@ def main(_argv):
        out_json[os.path.basename(model).split('.pdb')[0]]['cdr3a_plddt'] = cdr3a_bfactors_avg
        out_json[os.path.basename(model).split('.pdb')[0]]['cdr3b_plddt'] = cdr3b_bfactors_avg
 
+    ## Calculating iplddt score
+     
+    def calc_iplddt(pdb_file):
+         
+         chn1= "CDE"
+         chn2= "AB"
+         dis_cut=4
+         lowest=-1.00
+         
+         try:
+             with open(pdb_file, 'r') as file:
+                 pdb_lines = file.readlines()
+         except IOError:
+             sys.exit(f"unable to open file: {pdb_file}")
+         
+         chn1int = {char: 1 for char in chn1}
+         chn2int = {char: 1 for char in chn2}
+         
+         dis_cutoff = float(dis_cut) ** 2 
+         
+         chn1_int_plddt = {}
+         chn2_int_plddt = {}
+             
+         for line in pdb_lines:
+                 if not line.startswith("ATOM"):
+                     continue
+                 if line[12] == "H" or line[13] == "H":
+                     continue
+                 res_num = line[22:27].strip()
+                 chn_id = line[21].strip()
+                 res_id = line[17:20].strip()
+                 atm_id = line[12:16].strip()
+                 plddt1 = float(line[60:66].strip())
+                 
+                 if chn1int.get(chn_id) == 1:
+                     x1 = float(line[30:38].strip())
+                     y1 = float(line[38:46].strip())
+                     z1 = float(line[46:54].strip())
+                     
+                     for line2 in pdb_lines:
+                         if not line2.startswith("ATOM"):
+                             continue
+                         if line2[12] == "H" or line2[13] == "H":
+                             continue
+                         
+                         chn2 = line2[21].strip()
+                         res_num2 = line2[22:27].strip()
+                         res_id2 = line2[17:20].strip()
+                         atm_id = line2[12:16].strip()
+                         plddt2 = float(line2[60:66].strip())
+                         
+                         if chn2int.get(chn2) == 1:
+                             x2 = float(line2[30:38].strip())
+                             y2 = float(line2[38:46].strip())
+                             z2 = float(line2[46:54].strip())
+                             dist = ((x1 - x2)**2) + ((y1 - y2)**2) + ((z1 - z2)**2)
+                             if dist < dis_cutoff:
+                                 chn1_int_plddt[f"{res_num}\t{chn_id}\t{res_id}"] = plddt1
+                                 chn2_int_plddt[f"{res_num2}\t{chn2}\t{res_id2}"] = plddt2
+                             
+         weighted_sum = sum(chn1_int_plddt.values()) + sum(chn2_int_plddt.values())
+         counts = len(chn1_int_plddt) + len(chn2_int_plddt)
+         
+         final_score = lowest if counts == 0 else weighted_sum / counts
+         final_score = "{:.2f}".format(final_score)
+         
+         return final_score
+    
+    models_list = [i for i in glob('%s/*' % (out_dir)) if os.path.basename(i).startswith('ranked')]
+    for model in models_list:
+       iplddt_score = calc_iplddt(model)
+       out_json[os.path.basename(model).split('.pdb')[0]]['IpLDDT'] = iplddt_score
     
     #write statistics
     json_output_path = os.path.join(out_dir, 'statistics.json')
