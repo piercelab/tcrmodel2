@@ -311,8 +311,8 @@ def main(_argv):
      
     def calc_iplddt(pdb_file):
          
-         chn1= "CDE"
-         chn2= "AB"
+         chn1= "ABC"
+         chn2= "DE"
          dis_cut=4
          lowest=-1.00
          
