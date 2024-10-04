@@ -45,10 +45,7 @@ flags.DEFINE_string("tp_db", "data/databases" ,
                     "Customized TCR pMHC database path")
 flags.DEFINE_string("ori_db", None,
                     "Path to AlphaFold database with pdb_mmcif and params")
-flags.DEFINE_integer("cuda_device", 1, 
-                    "Visible cuda device number")
-# flags.DEFINE_string('tcr_docking_angle_exec', shutil.which('tcr_docking_angle_exec'),
-#                     'Path to the tcr_docking_angle executable.')
+
 FLAGS = flags.FLAGS
 
 def main(_argv):
@@ -64,7 +61,6 @@ def main(_argv):
     relax_structures=FLAGS.relax_structures
     tp_db=FLAGS.tp_db
     ori_db=FLAGS.ori_db
-    cuda_device=FLAGS.cuda_device
 
     if len(max_template_date)==0:
         max_template_date="2100-01-01"
