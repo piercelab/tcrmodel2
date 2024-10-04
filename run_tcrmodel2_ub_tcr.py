@@ -25,8 +25,7 @@ flags.DEFINE_string("tp_db", "data/databases" ,
                     "Customized TCR pMHC database path")
 flags.DEFINE_string("ori_db", None,
                     "Path to the database with pdb_mmcif database")
-flags.DEFINE_integer("cuda_device", 1, 
-                    "Visible cuda device number")
+
 FLAGS = flags.FLAGS
 
 def main(_argv):
@@ -38,7 +37,6 @@ def main(_argv):
     relax_structures=FLAGS.relax_structures
     tp_db=FLAGS.tp_db
     ori_db=FLAGS.ori_db
-    cuda_device=FLAGS.cuda_device
 
     if len(max_template_date)==0:
         max_template_date="2100-01-01"
