@@ -50,7 +50,7 @@ This project can be set up using Singularity, which allows you to create and run
 
 1. Ensure you have Singularity installed on your system. If not, download and install it from the [Singularity official website](https://docs.sylabs.io/guides/latest/user-guide/).
 
-2. Modify elements of the `singularity/tcrmodel2_singularity.def` like the CUDA version to match your system's configuration.
+2. We provide two singularity definition files (*.def) in the `singularity` directory, representing two different CUDA versions. You can copy the one corresponding to your CUDA version (or a similar version) to `singularity/tcrmodel2_singularity.def`, making additional modificiations as needed to match your system's specific CUDA, etc. configuration.
 
 3. Build the Singularity container. We offer a pre-built Singularity image file that is compatible with CUDA version 11.2, which you can access [here](https://piercelab.ibbr.umd.edu/alphafold_tcrmodel_test_cuda112_tfgpu.sif). Please right-click the link and choose 'Save Link As...' to save the file. However, for greater flexibility and compatibility with the CUDA version on your machine, we recommend building the .sif file from the provided .def file. This approach allows you to tailor the build to your specific system requirements.
 
