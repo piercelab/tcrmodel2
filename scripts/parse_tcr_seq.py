@@ -19,14 +19,18 @@ def parse_anarci(in_seq):
         return "NA", "NA"
 
     cdr3, seq="",""
-    for i in output.split("\n"):
-        if i and i[0] != "#" and i[0] != "/":
-            _, num, res = i.rstrip().split()
-            num = int(num)
-            if res != "-":
-                seq += res
-                if num >= 106 and num <= 139:
-                    cdr3 += res
+    for line in output.split("\n"):
+        if line and line[0] != "#" and line[0] != "/":
+            try:
+                fields = line.rstrip().split()
+                num = int(fields[1])    # Second field for residue_number
+                res = fields[-1]        # Last field for aa
+                if res != "-":
+                    seq += res
+                    if num >= 106 and num <= 139:
+                        cdr3 += res
+            except (ValueError, IndexError) as e:
+                print(f"Error parsing line '{line.strip()}': {str(e)}")
     return cdr3, seq
 
 
@@ -49,4 +53,5 @@ def parse_tcr(in_seq):
     cdr3, seq = parse_anarci(in_seq)
     v_gene, j_gene = get_germlines(in_seq)
     return [cdr3, seq, v_gene, j_gene]
+
 
