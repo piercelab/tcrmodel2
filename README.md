@@ -124,7 +124,7 @@ python run_tcrmodel2.py --help
 ```
 
 ## Generate unbound TCR predictions
-Workflow for creating TCR-pMHC complex structure predictions:
+Workflow for creating unbound TCR structure predictions:
 1. Receive TCR alpha, beta sequences
 2. Generate MSA features using reduced database, and modified TCR template search protocol. 
 3. Predict structures
@@ -154,3 +154,4 @@ Yin R, Ribeiro-Filho HV, Lin V, Gowthaman R, Cheung M, Pierce BG. (2023) TCRmode
 
 ## Copyright and license
 Apache License 2.0
+
