@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # Load required packages
 import os
 import sys
