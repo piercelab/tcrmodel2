@@ -80,5 +80,27 @@ def renumber_tcr_pdb(pdb_path, output_path):
 
         #write PDB
         pdb_u.select_atoms("protein").write(output_path)
-    
-    
+
+
+def renumber_mhc_pdb(pdb_path, output_path, mhc_class=1):
+    """
+    This function takes an mhc pdb from tcrmodel output and re-orders the chains so that 'A' refers to the MHC alpha
+    chain, 'B' refers to the mhc beta chain (for class II) and C refers to the antigen chain.
+    """
+    import MDAnalysis as mda
+
+    # Load pdb
+    pdb_u = mda.Universe(pdb_path)
+
+    chns = pdb_u.atoms.chainIDs
+    chns[chns == "A"] = "D"  # temp letter
+    chns[chns == "B"] = "A"
+
+    if mhc_class == 2:
+        chns[chns == "C"] = "B"
+
+    chns[chns == "D"] = "C"
+    pdb_u.atoms.chainIDs = chns
+
+    # Write PDB
+    pdb_u.select_atoms("protein").write(output_path)
